@@ -22,7 +22,7 @@ def floatToDB(val):
 
 
 def dBToFloat(val):
-    """ "
+    """
     Calculates a float value ranging from -1.0 to 1.0
     Where 1.0 is 0dB
     """
@@ -60,13 +60,12 @@ def audio_levels(audiofile, start=0, end=-1):
 
     for channel in range(0, audiofile.channels):
         rms[channel] = np.sqrt(rms[channel] / block_counter)
-        crest[channel] = round(floatToDB(peak_level[channel] / rms[channel]), 2)
+        crest[channel] = round(floatToDB(peak_level[channel] / rms[channel]),
+                               2)
         bias[channel] = round(
             floatToDB(
-                total_level[channel] / (block_counter * 10 * audiofile.samplerate)
-            ),
-            2,
-        )
+                total_level[channel] / (block_counter * 10 *
+                                        audiofile.samplerate)), 2)
         rms[channel] = round(floatToDB(rms[channel]), 2)
         peak_level[channel] = round(floatToDB(peak_level[channel]), 2)
 
@@ -74,16 +73,17 @@ def audio_levels(audiofile, start=0, end=-1):
 
 
 def visualize_corr(data, ref_data, corr):
-    fig, (ax_data, ax_ref_data, ax_corr) = plt.subplots(3, 1, figsize=(4.8, 4.8))
+    fig, (ax_data, ax_ref_data, ax_corr) = plt.subplots(
+        3, 1, figsize=(4.8, 4.8))
     ax_data.plot(ref_data)
-    ax_data.set_title("Ref impulse")
-    ax_data.set_xlabel("Sample Number")
+    ax_data.set_title('Ref impulse')
+    ax_data.set_xlabel('Sample Number')
     ax_ref_data.plot(data)
-    ax_ref_data.set_title("Signal with noise")
-    ax_ref_data.set_xlabel("Sample Number")
+    ax_ref_data.set_title('Signal with noise')
+    ax_ref_data.set_xlabel('Sample Number')
     ax_corr.plot(corr)
-    ax_corr.set_title("Cross-correlated signal")
-    ax_corr.set_xlabel("Lag")
+    ax_corr.set_title('Cross-correlated signal')
+    ax_corr.set_xlabel('Lag')
     ax_data.margins(0, 0.1)
     ax_ref_data.margins(0, 0.1)
     ax_corr.margins(0, 0.1)
@@ -105,11 +105,11 @@ def match_buffers(data, ref_data, gain=0, verbose=False):
 
     index = np.where(corr == val)[0][0]
 
-    cc = np.corrcoef(data[index : index + size], ref_data)[1, 0] * 100
+    cc = np.corrcoef(data[index:index + size], ref_data)[1, 0] * 100
     if np.isnan(cc):
         cc = 0
     if verbose:
-        print(f"{val} @ {index}, cc = {cc}")
+        print(f'{val} @ {index}, cc = {cc}')
         visualize_corr(data, ref_data, corr)
     return index, int(cc)
 
@@ -125,7 +125,7 @@ def find_markers(reference, noisy, threshold, sampelrate, verbose=False):
     split_times = []
     while last <= len(noisy) - len(reference):
         index, cc = match_buffers(
-            noisy[last : last + read_len], reference, verbose=verbose
+            noisy[last:last + read_len], reference, verbose=verbose
         )
 
         index += last
@@ -141,7 +141,8 @@ def find_markers(reference, noisy, threshold, sampelrate, verbose=False):
         counter += 1
 
     data = pd.DataFrame()
-    labels = ["sample", "time", "correlation"]
-    data = pd.DataFrame.from_records(split_times, columns=labels, coerce_float=True)
+    labels = ['sample', 'time', 'correlation']
+    data = pd.DataFrame.from_records(split_times, columns=labels,
+                                     coerce_float=True)
 
     return data
