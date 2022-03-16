@@ -28,7 +28,8 @@ def record(output, duration_sec, samplerate):
 
         rec_data = np.append(rec_data, indata[::])
 
-    with sd.Stream(samplerate=fs, channels=1, callback=callback, dtype=np.int16):
+    with sd.Stream(samplerate=fs, channels=1, callback=callback,
+                   dtype=np.int16):
         sd.sleep(duration_sec * 1000)
     wf.write(output, fs, rec_data)  # Save as WAV file
 
@@ -63,7 +64,7 @@ def play_and_record(signal, output, duration_sec):
             left = length - index
 
             if left > frames:
-                outdata[:, 0] = data[index : index + frames]
+                outdata[:, 0] = data[index:index + frames]
                 index += frames
             else:
                 index = -1
@@ -71,21 +72,22 @@ def play_and_record(signal, output, duration_sec):
         else:
             outdata[:, 0] = np.zeros(frames)
 
-    with sd.Stream(samplerate=fs, channels=1, callback=callback, dtype=np.int16):
+    with sd.Stream(samplerate=fs, channels=1, callback=callback,
+                   dtype=np.int16):
         sd.sleep(duration_sec * 1000)
     wf.write(output, fs, rec_data)  # Save as WAV file
 
 
 def main():
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("-i", "--input", required=True)
-    parser.add_argument("-o", "--output", required=True)
-    parser.add_argument("-t", "--seconds", required=False, default=30)
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-i', '--input', required=True)
+    parser.add_argument('-o', '--output', required=True)
+    parser.add_argument('-t', '--seconds', required=False, default=30)
     options = parser.parse_args()
     global running
     global index
     play_and_record(options.input, options.output, options.seconds, 16000)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
