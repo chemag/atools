@@ -11,78 +11,142 @@ import pandas as pd
 import play_rec as pr
 import soundfile as sf
 
+gain = -1
 
-def main():
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("-i", "--impulse",required=True)
-    parser.add_argument("-o", "--output_csv", required=True)
-    parser.add_argument("-t", "--seconds", required=False, default=30, type=int)
-    parser.add_argument("-d", "--delay", required=False, default=2, type=int)
-    parser.add_argument("-s", "--save", required=False, default="")
-    parser.add_argument("-v", "--verbose", required=False, action="store_true")
-    options = parser.parse_args()
-    global running
-    global index
 
-    start = time.time()
-    now = start
-    if options.impulse[-3:] == "wav":
-        ref = sf.SoundFile(options.impulse, "r")
+def findDelayInFile(noisy_path, ref_path, threshold, verbose):
+
+    """Find first two signals in an audio file
+
+    Calculates the difference between the first two signals
+    matching reference to sufficient degree.
+    intpuArgst:
+        noisy_path: path to wavfile to be searched
+        ref_path: path to wavfiile containing the signal
+        threshold: 0-100, correlations above this are considered
+        verbose: if True the correlations values will be printed out
+                 and a grap[h will be drawn showing the correlation
+                 and wave forms
+
+    Returns:
+        delay: in samplse,
+        delay: in ms,
+        correlation: for first signal,
+        correlation: for last signal
+    """
+
+    noisy = sf.SoundFile(noisy_path, "r")
+    ref = sf.SoundFile(ref_path, "r")
+
+    noisy_data = noisy.read()
+    ref_data = ref.read()
+    return findDelayInData(noisy_data, ref_data, threshold, noisy.samplerate, verbose)
+
+
+def findDelayInData(noisy_data, ref_data, threshold, samplerate, verbose):
+
+    """Find first two signals in audio data
+
+    Calculates the difference between the first two signals
+    matching reference to sufficient degree.
+    Args:
+        noisy_data: numpy data to be searched
+        ref_data: numpy data containing the signal
+        threshold: 0-100, correlations above this are considered
+        samplerate: needed to calculate time
+        verbose: if True the correlations values will be printed out
+                 and a grap[h will be drawn showing the correlation
+                 and wave forms
+
+    Returns:
+        delay: in samplse,
+        delay: in ms,
+        correlation: for first signal,
+        correlation: for last signal
+    """
+
+    global gain
+    # Check audio level once, if to low warn but try to gain up.
+    if gain == -1:
+        max_level = abs(np.max(noisy_data))
+        gain = 0.7 / max_level  #  -3dB
+
+    noisy_data = noisy_data * gain
+    data = cm.find_markers(ref_data, noisy_data, threshold, samplerate, verbose)
+    if len(data) > 1:
+        diff = data.loc[1, "sample"] - data.loc[0, "sample"]
+        return [
+            diff,
+            round(diff / samplerate * 1000),
+            data.loc[0, "correlation"],
+            data.loc[1, "correlation"],
+        ]
+
+        return None
+
+
+def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=False):
+    """Record and calculate delay times from echoes
+
+    Starts a recortding and play signal with an even delay.
+    The audio is used to find echoes and the delay is the time
+    between the first and the second signal in the recording.
+
+    Args:
+        impulse: path to the signal being used
+        threshold: 0-100, correlations above this are considered
+        delay: time between signals in seconds
+        outputcsv: write the results to this csv
+        save: save the recordded data to a cocatenated file
+        verbose: if True the correlations values will be printed out
+                 and a grap[h will be drawn showing the correlation
+                 and wave forms
+    """
+
+    ref = None
+    if impulse[-4:] == ".wav":
+        ref = sf.SoundFile(impulse, "r")
         ref_data = ref.read()
     else:
         print("Only wav file supported")
         exit(0)
 
     outputfile = None
-    threshold = 25
     failed_counter = 0
     delays = []
-
-    while now - start < options.seconds:
-        pr.play_and_record(options.impulse, options.output_csv + "_.wav", options.delay)
-        noisy = sf.SoundFile(options.output_csv + "_.wav", "r")
+    start = time.time()
+    now = start
+    tmpfile = outputcsv + "_.wav";
+    while now - start < seconds:
+        pr.play_and_record(impulse, tmpfile, delay)
+        noisy = sf.SoundFile(tmpfile, "r")
         noisy_data = noisy.read()
-        if (len(options.save) > 0) & (outputfile is None):
-            outputfile = sf.SoundFile(
-                options.save, "w", samplerate=noisy.samplerate, channels=noisy.channels
-            )
-
-        data = cm.find_markers(
-            ref_data, noisy_data, threshold, noisy.samplerate, verbose=options.verbose
-        )
-        if len(data) > 1:
-            diff = data.loc[1, "sample"] - data.loc[0, "sample"]
-            delays.append(
-                [
-                    diff,
-                    round(diff / noisy.samplerate * 1000),
-                    data.loc[0, "correlation"],
-                    data.loc[1, "correlation"],
-                ]
-            )
-            if outputfile:
-                outputfile.write(noisy_data)
+        data = findDelayInData(noisy_data, ref_data, threshold, ref.samplerate, verbose)
+        if data is not None:
+            delays.append(data)
         else:
             failed_counter += 1
 
+        if (len(save) > 0) & (outputfile is None):
+            outputfile = sf.SoundFile(
+                save, "w", samplerate=noisy.samplerate, channels=noisy.channels
+            )
+        if outputfile:
+            outputfile.write(noisy_data)
         now = time.time()
-        perc = int(100 * (now - start) / options.seconds)
+        perc = int(100 * (now - start) / seconds)
         if perc <= 100:
-            if failed_counter > 0:
-                total = len(delays) + failed_counter
-                print(f"{perc}% ({int(100 * failed_counter/(total))}% failures)")
-            else:
-                print(f"{perc}%")
+            print(f"{perc}%")
 
     if outputfile:
         outputfile.close()
     labels = ["samples", "time", "correlation1", "correlation2"]
     result = pd.DataFrame.from_records(delays, columns=labels, coerce_float=True)
 
-    output_filename = options.output_csv
-    if (options.output_csv is not None) & (options.output_csv[-4:] != ".csv"):
-        output_filename = options.output_csv + ".csv"
-    if options.output_csv:
+    output_filename = outputcsv
+    if (output_filename is not None) & (output_filename[-4:] != ".csv"):
+        output_filename = output_filename + ".csv"
+    if output_filename:
         result.to_csv(output_filename, index=False)
     if failed_counter > 0:
         total = len(delays) + failed_counter
@@ -98,7 +162,80 @@ def main():
         print(f"Longest latency: {int(np.max(result['time']))} ms")
         print(f"Average latency: {int(np.mean(result['time']))} ms")
 
-    os.remove(options.output_csv + "_.wav")
+    os.remove(tmpfile)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument(
+        "-i", "--impulse", required=True, help="path to a (preferable) short pcm file"
+    )
+    parser.add_argument(
+        "--source",
+        required=False,
+        default=None,
+        help="If set, calculation will be done on this file",
+    )
+    parser.add_argument(
+        "-o", "--output_csv", required=True, help="Write the result to this csv file"
+    )
+    parser.add_argument(
+        "-t",
+        "--seconds",
+        required=False,
+        default=30,
+        type=int,
+        help="Length of the test in secs",
+    )
+    parser.add_argument(
+        "-d",
+        "--delay",
+        required=False,
+        default=3,
+        type=int,
+        help="Distance between signal in secs",
+    )
+    parser.add_argument(
+        "-s",
+        "--save",
+        required=False,
+        default="",
+        help="Save and concatenate the recorded audio",
+    )
+    parser.add_argument("-v", "--verbose", required=False, action="store_true")
+    parser.add_argument(
+        "-tr",
+        "--threshold",
+        required=False,
+        type=int,
+        default=25,
+        help="Threshold for considering a hit. 100 is perfect match",
+    )
+    options = parser.parse_args()
+    global running
+    global index
+
+    threshold = options.threshold
+    if options.source is not None:
+        delay = findDelayInFile(
+            options.source, options.impulse, threshold, options.verbose
+        )
+        if delay is not None:
+            print(
+                f"The delay is \n{delay[0]} samples - {delay[1]} ms - correlations:({delay[2]}/{delay[3]})"
+            )
+        else:
+            print("Failed to find an echo")
+    else:
+        measureDelay(
+            options.impulse,
+            threshold,
+            options.delay,
+            options.seconds,
+            options.output_csv,
+            options.save,
+            options.verbose,
+        )
 
 
 if __name__ == "__main__":

@@ -105,21 +105,25 @@ def match_buffers(data, ref_data, gain=0, verbose=False):
 
     index = np.where(corr == val)[0][0]
 
-    cc = np.corrcoef(data[index : index + size], ref_data)[1, 0] * 100
-    if np.isnan(cc):
-        cc = 0
+    cc_ = np.corrcoef(data[index : index + size], ref_data)[1, 0] * 100
+    if np.isnan(cc_):
+        cc_ = 0
+    cc = int(cc_ + 0.5)
     if verbose:
         print(f"{val} @ {index}, cc = {cc}")
         visualize_corr(data, ref_data, corr)
-    return index, int(cc)
+    return index, cc
 
 
-def find_markers(reference, noisy, threshold, sampelrate, verbose=False):
+def find_markers(reference, noisy, threshold, samplerate, verbose=False):
     # Sets how close we can find multiple matches, 100ms
-    window = int(0.1 * sampelrate)
+    window = int(0.1 * samplerate)
     max_pos = 0
 
+    silence = np.full((len(reference)), 0)
+    noisy = np.append(noisy, silence)
     read_len = int(len(reference) + window)
+    ref_duration = len(reference) / samplerate
     counter = 0
     last = 0
     split_times = []
@@ -132,10 +136,15 @@ def find_markers(reference, noisy, threshold, sampelrate, verbose=False):
         pos = index - max_pos
         if pos < 0:
             pos = 0
-
+        time = pos / samplerate
         if cc > threshold:
-            time = pos / sampelrate
-            split_times.append([pos, time, cc])
+            if (len(split_times) > 0) and (
+                abs(time - split_times[-1][1]) < ref_duration / 2
+            ):
+                if split_times[-1][2] <= cc:
+                    split_times.pop(-1)
+            else:
+                split_times.append([pos, time, cc])
 
         last += window
         counter += 1
