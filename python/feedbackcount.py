@@ -10,9 +10,23 @@ import pandas as pd
 import play_rec as pr
 import soundfile as sf
 import matplotlib.pyplot as plt
+from scipy.fft import fft, fftfreq
+from scipy import signal
 
 
 def findPeaks(data, verbose=False):
+    """Finds peaks in the data
+
+    A peak is defined as a list of three times
+    where the middle one is higher than the other two
+
+    intpuArgst:
+        data: input data
+
+    Returns:
+        peaks: a list of peak index in data
+    """
+
     peaks = []
     last = 0
     up = False
@@ -34,6 +48,18 @@ def findPeaks(data, verbose=False):
 
 
 def calcDiff(data, samplerate, minimum_ms):
+    """Calculate distance between peaks in data
+
+    intpuArgst:
+        data: input data
+        samplerate: samplerate of data
+        minimum_ms: shortest time period to consider
+
+    Returns:
+        average: average distance in samples
+        average time: average distance in time in ms
+    """
+
     diffs = []
     last = 0
     for val in data:
@@ -45,17 +71,61 @@ def calcDiff(data, samplerate, minimum_ms):
     maxsamples = samplerate  # 1 sec
     filt = list(filter(lambda diff: diff > minsamples and diff < maxsamples,
                        diffs))
-    if len(filt) < 5:
+    if len(filt) > 0:
+        print(f'{filt}')
+        average = int(np.mean(filt))
+        try:
+            rounded = round(1000 * average / samplerate)
+        except Exception:
+            return None
+        return average, rounded
+    else:
         return None
-    average = int(np.mean(filt))
-    try:
-        rounded = round(1000 * average / samplerate)
-    except Exception:
-        return None
-    return average, rounded
 
 
-def findDelayUsingFeedbackFreqInFile(noisy_path, min_length_ms, verbose=False):
+def findFreqPeaksAndFilter(data, samplerate, verbose):
+    """Find strongest frequency peak and filters
+
+    Find the strongest frequency and funs a bandpass
+    filter between half and double the frequency
+    intpuArgst:
+        data: input data
+        samplerate: samplerate of data
+
+    Returns:
+        data: filtered version of data
+    """
+
+    n = len(data)
+    t = 1.0 / samplerate
+    yf = fft(data)
+    xf = fftfreq(n, t)
+    peak = np.argmax(np.abs(yf))
+    peakf = int(np.abs(xf[peak]))
+
+    if verbose:
+        print(f'peak: {peakf} Hz')
+        plt.plot(xf, 1.0 / n * np.abs(yf))
+
+    low = peakf / 2
+    high = peakf * 2
+
+    if verbose:
+        print(f'bp: {low} - {high}')
+
+    sos = signal.butter(2, [low, high], 'band', fs=samplerate, output='sos')
+    filtered = signal.sosfilt(sos, data)
+    yf = fft(filtered)
+    if verbose:
+        plt.plot(xf, 1.0 / n * np.abs(yf))
+        plt.grid()
+        plt.show()
+
+    return filtered
+
+
+def findDelayUsingFeedbackFreqInFile(
+        noisy_path, min_length_ms, nofilter=False, verbose=False):
     """Find first two signals in an audio file
 
     Calculates the difference between the first two signals
@@ -72,11 +142,11 @@ def findDelayUsingFeedbackFreqInFile(noisy_path, min_length_ms, verbose=False):
     noisy = sf.SoundFile(noisy_path, "r")
     data = noisy.read()
     return findDelayUsingFeedbackFreqInData(
-        data, noisy.samplerate, min_length_ms, verbose)
+        data, noisy.samplerate, min_length_ms, nofilter, verbose)
 
 
 def findDelayUsingFeedbackFreqInData(
-        data, samplerate, min_length_ms, verbose=False):
+        data, samplerate, min_length_ms, nofilter=False, verbose=False):
     """Find first two signals in an audio file
 
     Calculates the difference between the first two signals
@@ -89,7 +159,8 @@ def findDelayUsingFeedbackFreqInData(
         delay: in samplse,
         delay: in ms,
     """
-
+    if nofilter is False:
+        data = findFreqPeaksAndFilter(data, samplerate, verbose)
     window_len = int(0.1 * samplerate)  # 100ms
     data = data * data
     s = np.r_[data[window_len - 1:0:-1], data, data[-2:-window_len - 1:-1]]
@@ -105,7 +176,8 @@ def measureDelayUsingFeedback(impulse,
                               outputcsv,
                               save,
                               verbose=False,
-                              minlenghtms=200):
+                              minlenghtms=200,
+                              nofilter=False):
     """Record and calculate delay times from echoes
 
     Starts a recortding and play signal with an even delay.
@@ -136,6 +208,7 @@ def measureDelayUsingFeedback(impulse,
         data = findDelayUsingFeedbackFreqInData(noisy_data,
                                                 noisy.samplerate,
                                                 minlenghtms,
+                                                nofilter,
                                                 verbose)
         if data is not None:
             delays.append(data)
@@ -167,10 +240,12 @@ def measureDelayUsingFeedback(impulse,
     if failed_counter > 0:
         total = len(delays) + failed_counter
         print(
-            f"Failed {failed_counter} tries out of {total} ({int(100 * failed_counter/(total))})%"
+            f"Failed {failed_counter} tries out of "
+            f"{total} ({int(100 * failed_counter/(total))})%"
         )
         print(
-            "If this percentage is high it is an indicator on problems with the transmission."
+            "If this percentage is high it is an indicator "
+            "on problems with the transmission."
         )
 
     if len(result > 0):
@@ -228,17 +303,23 @@ def main():
         "-ms",
         "--timems",
         required=False,
-        default=200,
+        default=150,
         type=int,
         help="Shortes pulse to consider in feedback analysis",
+    )
+    parser.add_argument(
+        "-nf",
+        "--nofilter",
+        action='store_true',
+        help="Do not filter for frequency peaks",
     )
     options = parser.parse_args()
     global running
     global index
-
     if options.source is not None:
         delay = findDelayUsingFeedbackFreqInFile(options.source,
                                                  options.timems,
+                                                 options.nofilter,
                                                  options.verbose)
         if delay is not None:
             print(
@@ -254,6 +335,7 @@ def main():
             options.output_csv,
             options.save,
             options.verbose,
+            nofilter=options.nofilter
         )
 
 
