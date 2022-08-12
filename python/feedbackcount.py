@@ -72,7 +72,6 @@ def calcDiff(data, samplerate, minimum_ms):
     filt = list(filter(lambda diff: diff > minsamples and diff < maxsamples,
                        diffs))
     if len(filt) > 0:
-        print(f'{filt}')
         average = int(np.mean(filt))
         try:
             rounded = round(1000 * average / samplerate)
