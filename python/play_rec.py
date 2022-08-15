@@ -44,7 +44,11 @@ def play_and_record(signal, output, duration_sec):
     rec_data = np.empty((0, 1), np.int16)
     index = -1
     last_start = -100
-    fs, data = wf.read(signalfile)
+    if signal is None:
+        fs = 48000
+        data = [0]
+    else:
+        fs, data = wf.read(signalfile)
 
     def callback(indata, outdata, frames, time, status):
         global rec_data
