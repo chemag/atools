@@ -108,7 +108,9 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
     hist, edges = np.histogram(diffs, int(
         samplerate / 1000), range=(minsamples, maxsamples))
     maxindex = np.argmax(hist)
-    average = int((edges[maxindex] + edges[maxindex + 1]) / 2)
+    inbin = list(filter(lambda diff: diff >= edges[maxindex] and
+                        diff < edges[maxindex + 1], diffs))
+    average = int(np.round(np.mean(inbin)))
     if verbose:
         print(f'mid = {average} count = {hist[maxindex]} ')
         fig, ax = plt.subplots()
