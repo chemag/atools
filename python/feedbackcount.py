@@ -120,7 +120,7 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
 
     if len(diffs) < 5:
         print(f'diffs = {diffs}')
-        average = np.mean(diffs)
+        average = int(np.round(np.mean(diffs)))
         rounded = round(1000 * average / samplerate)
         return average, rounded, 1
     else:
