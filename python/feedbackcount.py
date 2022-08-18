@@ -119,10 +119,12 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
             diffs.append(int((data[index] - data[index - offset])))
 
     if len(diffs) < 5:
-        print(f'diffs = {diffs}')
-        average = int(np.round(np.mean(diffs)))
-        rounded = round(1000 * average / samplerate)
-        return average, rounded, 1
+        if len(diffs) > 0:
+            average = int(np.round(np.mean(diffs)))
+            rounded = round(1000 * average / samplerate)
+            return average, rounded, 1
+        else:
+            return None
     else:
         minsamples = int(samplerate * (minimum_ms / 1000))
         maxsamples = int(samplerate * (maximum_ms / 1000))
@@ -378,10 +380,13 @@ def measureDelayUsingFeedback(impulse,
         if perc <= 100:
             print(f"{perc}%")
 
-        if data[2] < 20:
-            print(
-                f"Number of repetition is {data[2]}.\n"
-                "Consider a longer test")
+        if data is not None:
+            if data[2] < 20:
+                print(
+                    f"Number of repetition is {data[2]}.\n"
+                    "Consider a longer test")
+        else:
+            print('No repetitions found - check setup.')
     if outputfile:
         outputfile.close()
     labels = ["samples", "time", "count"]
