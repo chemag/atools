@@ -130,7 +130,7 @@ def run_audio_filter(options):
         # TODO(chema): fix this?
         assert (
             samplerate == samplerate2
-        ), f"error: both input files must have the same sample rate ({samplerate} != {samplerate2}"
+        ), f"error: both input files must have the same sample rate ({samplerate} != {samplerate2})"
     # process the input
     if options.filter == "copy":
         outaud = inaud
