@@ -17,6 +17,7 @@ import scipy.signal
 FILTER_CHOICES = (
     "copy",
     "noise",
+    "phase-invert",
 )
 
 default_values = {
@@ -26,6 +27,11 @@ default_values = {
     "infile": None,
     "outfile": None,
 }
+
+
+def invert_phase(inaud, **kwargs):
+    outaud = -inaud
+    return outaud
 
 
 def add_noise(inaud, **kwargs):
@@ -51,6 +57,8 @@ def run_audio_filter(options):
         outaud = inaud
     elif options.filter == "noise":
         outaud = add_noise(inaud)
+    elif options.filter == "phase-invert":
+        outaud = invert_phase(inaud)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
