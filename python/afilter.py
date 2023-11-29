@@ -60,6 +60,10 @@ def print_stats(inaud, samplerate):
     print(f"samplerate: {samplerate}")
     print(f"num_samples: {len(inaud)}")
     # add some statistics on the audio signal
+    mean = np.mean(inaud)
+    stddev = np.std(inaud)
+    print(f"mean: {mean}")
+    print(f"stddev: {stddev}")
     max_value = np.amax(inaud)
     min_value = np.amin(inaud)
     print(f"max_value: {max_value}")
