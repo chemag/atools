@@ -57,6 +57,10 @@ def print_stats(inaud, samplerate):
     print(f"samplerate: {samplerate}")
     print(f"num_samples: {len(inaud)}")
     # add some statistics on the audio signal
+    max_value = np.amax(inaud)
+    min_value = np.amin(inaud)
+    print(f"max_value: {max_value}")
+    print(f"min_value: {min_value}")
     rms, dbfs = get_rms(inaud)
     print(f"RMS: {rms}")
     print(f"dBFS: {dbfs}")
