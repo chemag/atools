@@ -16,6 +16,7 @@ import scipy.signal
 
 FILTER_CHOICES = (
     "copy",
+    "noise",
 )
 
 default_values = {
@@ -27,12 +28,29 @@ default_values = {
 }
 
 
+def add_noise(inaud, **kwargs):
+    # get optional input parameters
+    random_max = np.iinfo(inaud.dtype).max // 2
+    random_max = kwargs.get("random_max", random_max)
+    # create noise signal
+    # note that we need to upgrade the signal to int32
+    noiseaud = np.random.randint(
+        -random_max, random_max, size=inaud.shape, dtype=np.int32
+    )
+    outaud = inaud + noiseaud
+    outaud[outaud > np.iinfo(np.int16).max] = np.iinfo(np.int16).max
+    outaud[outaud < np.iinfo(np.int16).min] = np.iinfo(np.int16).min
+    return outaud.astype(np.int16)
+
+
 def run_audio_filter(options):
     # open the input
     samplerate, inaud = scipy.io.wavfile.read(options.infile)
     # process the input
     if options.filter == "copy":
         outaud = inaud
+    elif options.filter == "noise":
+        outaud = add_noise(inaud)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
