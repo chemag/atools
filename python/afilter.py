@@ -19,6 +19,7 @@ FILTER_CHOICES = (
     "stats",
     "noise",
     "phase-invert",
+    "add",
 )
 
 default_values = {
@@ -26,6 +27,7 @@ default_values = {
     "dry_run": False,
     "filter": "copy",
     "infile": None,
+    "infile2": None,
     "outfile": None,
 }
 
@@ -55,9 +57,32 @@ def add_noise(inaud, **kwargs):
     return outaud.astype(np.int16)
 
 
+# adds inputs with saturation (not mixing)
+def add_inputs(in1aud, in2aud, **kwargs):
+    # start with int32 to allow additions
+    in1len = len(in1aud)
+    in2len = len(in2aud)
+    outlen = max(in1len, in2len)
+    outaud = np.zeros((outlen,), dtype=np.int32)
+    # add the inputs
+    for i in range(outlen):
+        outaud[i] += in1aud[i] if i < in1len else 0
+        outaud[i] += in2aud[i] if i < in2len else 0
+    # saturate the output
+    outaud[outaud > np.iinfo(np.int16).max] = np.iinfo(np.int16).max
+    outaud[outaud < np.iinfo(np.int16).min] = np.iinfo(np.int16).min
+    return outaud.astype(np.int16)
+
+
 def run_audio_filter(options):
     # open the input
     samplerate, inaud = scipy.io.wavfile.read(options.infile)
+    if options.infile2 is not None:
+        samplerate2, in2aud = scipy.io.wavfile.read(options.infile2)
+        # TODO(chema): fix this?
+        assert (
+            samplerate == samplerate2
+        ), f"error: both input files must have the same sample rate ({samplerate} != {samplerate2}"
     # process the input
     if options.filter == "copy":
         outaud = inaud
@@ -68,6 +93,8 @@ def run_audio_filter(options):
         outaud = add_noise(inaud)
     elif options.filter == "phase-invert":
         outaud = invert_phase(inaud)
+    elif options.filter == "add":
+        outaud = add_inputs(inaud, in2aud)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
@@ -140,6 +167,15 @@ def get_options(argv):
         default=default_values["infile"],
         metavar="input-file",
         help="input file",
+    )
+    parser.add_argument(
+        "-j",
+        "--infile2",
+        dest="infile2",
+        type=str,
+        default=default_values["infile2"],
+        metavar="input-file2",
+        help="input file2",
     )
     parser.add_argument(
         "-o",
