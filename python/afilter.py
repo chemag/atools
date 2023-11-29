@@ -20,6 +20,7 @@ FILTER_CHOICES = (
     "noise",
     "phase-invert",
     "add",
+    "diff",
 )
 
 default_values = {
@@ -74,6 +75,23 @@ def add_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
+# diffs inputs with saturation (not mixing)
+def diff_inputs(in1aud, in2aud, **kwargs):
+    # start with int32 to allow additions
+    in1len = len(in1aud)
+    in2len = len(in2aud)
+    outlen = max(in1len, in2len)
+    outaud = np.zeros((outlen,), dtype=np.int32)
+    # diff the inputs
+    for i in range(outlen):
+        outaud[i] += in1aud[i] if i < in1len else 0
+        outaud[i] -= in2aud[i] if i < in2len else 0
+    # saturate the output
+    outaud[outaud > np.iinfo(np.int16).max] = np.iinfo(np.int16).max
+    outaud[outaud < np.iinfo(np.int16).min] = np.iinfo(np.int16).min
+    return outaud.astype(np.int16)
+
+
 def run_audio_filter(options):
     # open the input
     samplerate, inaud = scipy.io.wavfile.read(options.infile)
@@ -95,6 +113,8 @@ def run_audio_filter(options):
         outaud = invert_phase(inaud)
     elif options.filter == "add":
         outaud = add_inputs(inaud, in2aud)
+    elif options.filter == "diff":
+        outaud = diff_inputs(inaud, in2aud)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
