@@ -51,11 +51,11 @@ def findPeaks(data, verbose=False):
         fig, ax = plt.subplots()
         ax.plot(data)
         ax.plot(peaks, data[peaks])
-        ax.plot(filtered, data[filtered], 'o', label='Filtered')
-        ax.set_yscale('log')
-        ax.set_ylabel('magnitude')
-        ax.set_xlabel('time (samples)')
-        fig.suptitle('Find peaks')
+        ax.plot(filtered, data[filtered], "o", label="Filtered")
+        ax.set_yscale("log")
+        ax.set_ylabel("magnitude")
+        ax.set_xlabel("time (samples)")
+        fig.suptitle("Find peaks")
         plt.legend()
         plt.show()
     return compr
@@ -83,8 +83,7 @@ def calcDiff(data, samplerate, minimum_ms):
 
     minsamples = int(samplerate * (minimum_ms / 1000))
     maxsamples = samplerate  # 1 sec
-    filt = list(filter(lambda diff: diff > minsamples and diff < maxsamples,
-                       diffs))
+    filt = list(filter(lambda diff: diff > minsamples and diff < maxsamples, diffs))
     if len(filt) > 0:
         average = int(np.mean(filt))
         try:
@@ -128,8 +127,9 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
     else:
         minsamples = int(samplerate * (minimum_ms / 1000))
         maxsamples = int(samplerate * (maximum_ms / 1000))
-        hist, edges = np.histogram(diffs, int(
-            samplerate / 1000), range=(minsamples, maxsamples))
+        hist, edges = np.histogram(
+            diffs, int(samplerate / 1000), range=(minsamples, maxsamples)
+        )
         maxindex = np.argmax(hist)
         order = np.argsort(hist)[::-1]
         maxval = edges[order[0]]
@@ -140,16 +140,20 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
         if abs(ratio - 2) < 0.1:
             if maxval > secmaxval:
                 maxindex = order[1]
-        inbin = list(filter(lambda diff: diff >= edges[maxindex] and
-                            diff < edges[maxindex + 1], diffs))
+        inbin = list(
+            filter(
+                lambda diff: diff >= edges[maxindex] and diff < edges[maxindex + 1],
+                diffs,
+            )
+        )
         average = int(np.round(np.mean(inbin)))
         if verbose:
             fig, ax = plt.subplots()
             ax.plot(edges[:-1], hist)
-            ax.set_xlabel('time (samples)')
-            ax.set_ylabel('count')
+            ax.set_xlabel("time (samples)")
+            ax.set_ylabel("count")
             ax.grid()
-            fig.suptitle('Peak distances histogram')
+            fig.suptitle("Peak distances histogram")
             plt.show()
         if average > 0:
             try:
@@ -162,7 +166,7 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
 
 
 def bpFilterSignal(data, hp, lp, order, samplerate, verbose):
-    """ Band pass filter the signal
+    """Band pass filter the signal
 
     Bandpass with butterworth filter with hp and lp
 
@@ -188,19 +192,19 @@ def bpFilterSignal(data, hp, lp, order, samplerate, verbose):
         xf = fftfreq(n, t)
         peak = np.argmax(np.abs(yf))
         peakf = int(np.abs(xf[peak]))
-        ax1.plot(xf[:int(n / 2)], 1.0 / n * np.abs(yf[:int(n / 2)]))
-        ax1.plot(xf[peak], 1.0 / n * np.abs(yf[peak]), 'o', color='red')
-        ax1.vlines(x=lp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color='green')
-        ax1.vlines(x=hp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color='green')
+        ax1.plot(xf[: int(n / 2)], 1.0 / n * np.abs(yf[: int(n / 2)]))
+        ax1.plot(xf[peak], 1.0 / n * np.abs(yf[peak]), "o", color="red")
+        ax1.vlines(x=lp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color="green")
+        ax1.vlines(x=hp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color="green")
         ax1.grid()
-        ax1.set_xscale('log')
-        ax1.set_yscale('log')
-        ax1.set_xlabel('Frequency (Hz)')
-        ax1.set_ylabel('magnitude')
-        fig.suptitle(f'FFT non filter vs filtered peak {peakf} Hz')
-        print(f'peak: {peakf} Hz')
+        ax1.set_xscale("log")
+        ax1.set_yscale("log")
+        ax1.set_xlabel("Frequency (Hz)")
+        ax1.set_ylabel("magnitude")
+        fig.suptitle(f"FFT non filter vs filtered peak {peakf} Hz")
+        print(f"peak: {peakf} Hz")
 
-    sos = signal.butter(order, [hp, lp], 'band', fs=samplerate, output='sos')
+    sos = signal.butter(order, [hp, lp], "band", fs=samplerate, output="sos")
     data = signal.sosfilt(sos, data)
     if verbose:
         yf = fft(data)
@@ -208,18 +212,20 @@ def bpFilterSignal(data, hp, lp, order, samplerate, verbose):
         prevPeakf = peakf
         peak = np.argmax(np.abs(yf))
         peakf = int(np.abs(xf[peak]))
-        ax2.plot(xf[:int(n / 2)], 1.0 / n * np.abs(yf[:int(n / 2)]))
-        ax2.plot(xf[peak], 1.0 / n * np.abs(yf[peak]), 'o', color='red')
-        ax2.vlines(x=lp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color='green')
-        ax2.vlines(x=hp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color='green')
+        ax2.plot(xf[: int(n / 2)], 1.0 / n * np.abs(yf[: int(n / 2)]))
+        ax2.plot(xf[peak], 1.0 / n * np.abs(yf[peak]), "o", color="red")
+        ax2.vlines(x=lp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color="green")
+        ax2.vlines(x=hp, ymax=1.0 / n * max(np.abs(yf)), ymin=0, color="green")
         ax2.grid()
-        ax2.set_xscale('log')
-        ax2.set_yscale('log')
-        ax2.set_xlabel('Frequency (Hz)')
-        ax2.set_ylabel('magnitude')
-        print(f'new peak: {peakf} Hz')
-        fig.suptitle(f'FFT non filter vs filteres, original peak '
-                     f'{prevPeakf} Hz, filtered {peakf} Hz')
+        ax2.set_xscale("log")
+        ax2.set_yscale("log")
+        ax2.set_xlabel("Frequency (Hz)")
+        ax2.set_ylabel("magnitude")
+        print(f"new peak: {peakf} Hz")
+        fig.suptitle(
+            f"FFT non filter vs filteres, original peak "
+            f"{prevPeakf} Hz, filtered {peakf} Hz"
+        )
         plt.show()
     return data
 
@@ -236,13 +242,14 @@ def findPeak(data, samplerate, verbose):
 
 
 def findDelayUsingFeedbackFreqInFile(
-        noisy_path,
-        min_length_ms,
-        max_length_ms,
-        nofilter=False,
-        hp=None,
-        lp=None,
-        verbose=False):
+    noisy_path,
+    min_length_ms,
+    max_length_ms,
+    nofilter=False,
+    hp=None,
+    lp=None,
+    verbose=False,
+):
     """Find first two signals in an audio file
 
     Calculates the difference between the first two signals
@@ -259,25 +266,20 @@ def findDelayUsingFeedbackFreqInFile(
     noisy = sf.SoundFile(noisy_path, "r")
     data = noisy.read()
     return findDelayUsingFeedbackFreqInData(
-        data,
-        noisy.samplerate,
-        min_length_ms,
-        max_length_ms,
-        nofilter,
-        hp,
-        lp,
-        verbose)
+        data, noisy.samplerate, min_length_ms, max_length_ms, nofilter, hp, lp, verbose
+    )
 
 
 def findDelayUsingFeedbackFreqInData(
-        data,
-        samplerate,
-        min_length_ms,
-        max_length_ms,
-        nofilter=False,
-        hp=None,
-        lp=None,
-        verbose=False):
+    data,
+    samplerate,
+    min_length_ms,
+    max_length_ms,
+    nofilter=False,
+    hp=None,
+    lp=None,
+    verbose=False,
+):
     """Find first two signals in an audio file
 
     Calculates the difference between the first two signals
@@ -309,26 +311,27 @@ def findDelayUsingFeedbackFreqInData(
         data = bpFilterSignal(data, low, high, 4, samplerate, verbose)
     window_len = int(0.1 * samplerate)  # 100ms
     data = data * data
-    s = np.r_[data[window_len - 1:0:-1], data, data[-2:-window_len - 1:-1]]
+    s = np.r_[data[window_len - 1 : 0 : -1], data, data[-2 : -window_len - 1 : -1]]
     w = np.hanning(window_len)
-    sdata = np.convolve(w / w.sum(), s, mode='valid')
+    sdata = np.convolve(w / w.sum(), s, mode="valid")
     peaks = findPeaks(sdata, verbose)
     # return calcDiff(peaks, samplerate, min_length_ms)
-    return findMostCommonDiff(
-        peaks, samplerate, min_length_ms, max_length_ms, verbose)
+    return findMostCommonDiff(peaks, samplerate, min_length_ms, max_length_ms, verbose)
 
 
-def measureDelayUsingFeedback(impulse,
-                              delay,
-                              seconds,
-                              outputcsv,
-                              save,
-                              verbose=False,
-                              min_length_ms=200,
-                              max_length_ms=600,
-                              nofilter=False,
-                              hp=None,
-                              lp=None):
+def measureDelayUsingFeedback(
+    impulse,
+    delay,
+    seconds,
+    outputcsv,
+    save,
+    verbose=False,
+    min_length_ms=200,
+    max_length_ms=600,
+    nofilter=False,
+    hp=None,
+    lp=None,
+):
     """Record and calculate delay times from echoes
 
     Starts a recortding and play signal with an even delay.
@@ -356,14 +359,16 @@ def measureDelayUsingFeedback(impulse,
         pr.play_and_record(impulse, tmpfile, delay)
         noisy = sf.SoundFile(tmpfile, "r")
         noisy_data = noisy.read()
-        data = findDelayUsingFeedbackFreqInData(noisy_data,
-                                                noisy.samplerate,
-                                                min_length_ms,
-                                                max_length_ms,
-                                                nofilter,
-                                                hp,
-                                                lp,
-                                                verbose)
+        data = findDelayUsingFeedbackFreqInData(
+            noisy_data,
+            noisy.samplerate,
+            min_length_ms,
+            max_length_ms,
+            nofilter,
+            hp,
+            lp,
+            verbose,
+        )
         if data is not None:
             delays.append(data)
         else:
@@ -382,16 +387,13 @@ def measureDelayUsingFeedback(impulse,
 
         if data is not None:
             if data[2] < 20:
-                print(
-                    f"Number of repetition is {data[2]}.\n"
-                    "Consider a longer test")
+                print(f"Number of repetition is {data[2]}.\n" "Consider a longer test")
         else:
-            print('No repetitions found - check setup.')
+            print("No repetitions found - check setup.")
     if outputfile:
         outputfile.close()
     labels = ["samples", "time", "count"]
-    result = pd.DataFrame.from_records(
-        delays, columns=labels, coerce_float=True)
+    result = pd.DataFrame.from_records(delays, columns=labels, coerce_float=True)
 
     output_filename = outputcsv
     if (output_filename is not None) & (output_filename[-4:] != ".csv"):
@@ -432,9 +434,7 @@ def main():
         help="If set, calculation will be done on this file",
     )
     parser.add_argument(
-        "-o", "--output_csv",
-        required=True,
-        help="Write the result to this csv file"
+        "-o", "--output_csv", required=True, help="Write the result to this csv file"
     )
     parser.add_argument(
         "-t",
@@ -479,7 +479,7 @@ def main():
     parser.add_argument(
         "-nf",
         "--nofilter",
-        action='store_true',
+        action="store_true",
         help="Do not filter for frequency peaks",
     )
     parser.add_argument(
@@ -500,22 +500,19 @@ def main():
     global running
     global index
     if options.source is not None:
-        delay, delay_ms, count = \
-            findDelayUsingFeedbackFreqInFile(options.source,
-                                             options.mintimems,
-                                             options.maxtimems,
-                                             options.nofilter,
-                                             options.hpfreq,
-                                             options.lpfreq,
-                                             options.verbose)
+        delay, delay_ms, count = findDelayUsingFeedbackFreqInFile(
+            options.source,
+            options.mintimems,
+            options.maxtimems,
+            options.nofilter,
+            options.hpfreq,
+            options.lpfreq,
+            options.verbose,
+        )
         if delay is not None:
-            print(
-                f"The delay is \n{delay} samples - {delay_ms} ms"
-            )
+            print(f"The delay is \n{delay} samples - {delay_ms} ms")
             if count < 20:
-                print(
-                    f"Number of repetition is {count}.\n"
-                    "Consider a longer test")
+                print(f"Number of repetition is {count}.\n" "Consider a longer test")
         else:
             print("Failed to find an echo")
     else:
@@ -528,7 +525,7 @@ def main():
             options.verbose,
             options.mintimems,
             options.maxtimems,
-            nofilter=options.nofilter
+            nofilter=options.nofilter,
         )
 
 

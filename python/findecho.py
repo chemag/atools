@@ -15,7 +15,6 @@ gain = -1
 
 
 def findDelayInFile(noisy_path, ref_path, threshold, verbose):
-
     """Find first two signals in an audio file
 
     Calculates the difference between the first two signals
@@ -44,7 +43,6 @@ def findDelayInFile(noisy_path, ref_path, threshold, verbose):
 
 
 def findDelayInData(noisy_data, ref_data, threshold, samplerate, verbose):
-
     """Find first two signals in audio data
 
     Calculates the difference between the first two signals
@@ -108,7 +106,7 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
         ref = sf.SoundFile(impulse, "r")
         ref_data = ref.read()
     else:
-        print('Only wav file supported')
+        print("Only wav file supported")
         exit(0)
 
     outputfile = None
@@ -116,7 +114,7 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
     delays = []
     start = time.time()
     now = start
-    tmpfile = outputcsv + "_.wav";
+    tmpfile = outputcsv + "_.wav"
     while now - start < seconds:
         pr.play_and_record(impulse, tmpfile, delay)
         noisy = sf.SoundFile(tmpfile, "r")
@@ -140,9 +138,8 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
 
     if outputfile:
         outputfile.close()
-    labels = ['samples', 'time', 'correlation1', 'correlation2']
-    result = pd.DataFrame.from_records(delays, columns=labels,
-                                       coerce_float=True)
+    labels = ["samples", "time", "correlation1", "correlation2"]
+    result = pd.DataFrame.from_records(delays, columns=labels, coerce_float=True)
 
     output_filename = outputcsv
     if (output_filename is not None) & (output_filename[-4:] != ".csv"):
@@ -152,11 +149,13 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
     if failed_counter > 0:
         total = len(delays) + failed_counter
         print(
-            f'Failed {failed_counter} tries out of {total} '
-            f'({int(100 * failed_counter/(total))})%')
+            f"Failed {failed_counter} tries out of {total} "
+            f"({int(100 * failed_counter/(total))})%"
+        )
         print(
-            'If this percentage is high it is an indicator on problems '
-            'with the transmission.')
+            "If this percentage is high it is an indicator on problems "
+            "with the transmission."
+        )
 
     if len(result > 0):
         print(f'Shortest latency: {int(np.min(result["time"]))} ms')
@@ -238,5 +237,6 @@ def main():
             options.verbose,
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
