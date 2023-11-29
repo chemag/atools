@@ -7,6 +7,7 @@ Runs a generic audio filter.
 
 
 import argparse
+import math
 import numpy as np
 import os
 import sys
@@ -38,9 +39,27 @@ def invert_phase(inaud, **kwargs):
     return outaud
 
 
+def get_rms(inaud):
+    # RMS = \sqrt((\sum_i sample[i] ** 2) / n)
+    square_sum = 0
+    inlen = len(inaud)
+    max_value = 0
+    for sample in inaud:
+        square_sum += sample**2
+    rms = math.sqrt(square_sum / inlen)
+    # dBFS = 20 * math.log10(RMS / max_sample_value)
+    max_sample_value = max(abs(np.amax(inaud)), abs(np.amin(inaud)))
+    dbfs = 20 * math.log10(rms / max_sample_value)
+    return rms, dbfs
+
+
 def print_stats(inaud, samplerate):
     print(f"samplerate: {samplerate}")
     print(f"num_samples: {len(inaud)}")
+    # add some statistics on the audio signal
+    rms, dbfs = get_rms(inaud)
+    print(f"RMS: {rms}")
+    print(f"dBFS: {dbfs}")
 
 
 def add_noise(inaud, **kwargs):
