@@ -49,7 +49,10 @@ def get_rms(inaud):
     rms = math.sqrt(square_sum / inlen)
     # dBFS = 20 * math.log10(RMS / max_sample_value)
     max_sample_value = max(abs(np.amax(inaud)), abs(np.amin(inaud)))
-    dbfs = 20 * math.log10(rms / max_sample_value)
+    if max_sample_value != 0:
+        dbfs = 20 * math.log10(rms / max_sample_value)
+    else:
+        dbfs = math.nan
     return rms, dbfs
 
 
