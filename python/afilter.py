@@ -40,37 +40,44 @@ def invert_phase(inaud, **kwargs):
 
 
 def get_rms(inaud):
-    # RMS = \sqrt((\sum_i sample[i] ** 2) / n)
-    square_sum = 0
-    inlen = len(inaud)
-    max_value = 0
-    for sample in inaud:
-        square_sum += sample**2
-    rms = math.sqrt(square_sum / inlen)
-    # dBFS = 20 * math.log10(RMS / max_sample_value)
-    max_sample_value = max(abs(int(np.amax(inaud))), abs(int(np.amin(inaud))))
-    if max_sample_value != 0:
-        dbfs = 20 * math.log10(rms / max_sample_value)
+    # add up all the input samples
+    total_linear = 0
+    total_abs = 0
+    total_square = 0
+    for i in range(len(inaud)):
+        total_linear += inaud[i]
+        total_abs += int(inaud[i]) if inaud[i] > 0 else -int(inaud[i])
+        total_square += 1 * inaud[i] * inaud[i]
+    total_linear /= len(inaud)
+    total_abs /= len(inaud)
+    total_square /= len(inaud)
+    total_square = math.sqrt(total_square)
+    # normalize values
+    normalized_linear = total_linear / np.iinfo(inaud.dtype).max
+    normalized_abs = total_abs / np.iinfo(inaud.dtype).max
+    normalized_square = total_square / np.iinfo(inaud.dtype).max
+    if normalized_square > 0:
+        rms = 20 * math.log10(normalized_square / 1.0)
     else:
-        dbfs = math.nan
-    return rms, dbfs
+        rms = math.nan
+    return normalized_linear, normalized_abs, normalized_square, rms
 
 
 def print_stats(inaud, samplerate):
     print(f"samplerate: {samplerate}")
     print(f"num_samples: {len(inaud)}")
     # add some statistics on the audio signal
-    mean = np.mean(inaud)
-    stddev = np.std(inaud)
-    print(f"mean: {mean}")
-    print(f"stddev: {stddev}")
     max_value = np.amax(inaud)
     min_value = np.amin(inaud)
     print(f"max_value: {max_value}")
     print(f"min_value: {min_value}")
-    rms, dbfs = get_rms(inaud)
-    print(f"RMS: {rms}")
-    print(f"dBFS: {dbfs}")
+    stddev = np.std(inaud)
+    print(f"stddev: {stddev}")
+    normalized_linear, normalized_abs, normalized_square, rms = get_rms(inaud)
+    print(f"normalized_linear: {normalized_linear}")
+    print(f"normalized_abs: {normalized_abs}")
+    print(f"normalized_square: {normalized_square}")
+    print(f"rms: {rms}")
 
 
 def add_noise(inaud, **kwargs):
