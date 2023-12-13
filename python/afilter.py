@@ -20,6 +20,7 @@ FILTER_CHOICES = (
     "stats",
     "noise",
     "phase-invert",
+    "shift",
     "add",
     "diff",
 )
@@ -28,6 +29,7 @@ default_values = {
     "debug": 0,
     "dry_run": False,
     "filter": "copy",
+    "shift": 0,
     "infile": None,
     "infile2": None,
     "outfile": None,
@@ -36,6 +38,17 @@ default_values = {
 
 def invert_phase(inaud, **kwargs):
     outaud = -inaud
+    return outaud
+
+
+def shift_signal(inaud, shift):
+    # start with the same length and type
+    outaud = inaud.copy()
+    # process shifts by sign
+    if shift > 0:
+        outaud[shift:] = inaud[:-shift]
+    elif shift < 0:
+        outaud[:shift] = inaud[-shift:]
     return outaud
 
 
@@ -150,6 +163,8 @@ def run_audio_filter(options):
         outaud = add_noise(inaud)
     elif options.filter == "phase-invert":
         outaud = invert_phase(inaud)
+    elif options.filter == "shift":
+        outaud = shift_signal(inaud, options.shift)
     elif options.filter == "add":
         outaud = add_inputs(inaud, in2aud)
     elif options.filter == "diff":
@@ -217,6 +232,13 @@ def get_options(argv):
             )
         ),
         help="filter arg",
+    )
+    parser.add_argument(
+        "--shift",
+        type=int,
+        dest="shift",
+        default=default_values["shift"],
+        help="Shift Amount",
     )
     parser.add_argument(
         "-i",
