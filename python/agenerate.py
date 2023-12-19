@@ -46,6 +46,10 @@ def gen_delta(duration_samples, delta_distance_samples):
     outaud = np.zeros((duration_samples,), dtype=np.int16)
     for i in list(range(0, len(outaud), delta_distance_samples)):
         outaud[i] = np.iinfo(outaud.dtype).max
+        # invert one in X samples
+        X = 5
+        if i % (X * delta_distance_samples) == 0:
+            outaud[i] = np.iinfo(outaud.dtype).min
     return outaud
 
 
