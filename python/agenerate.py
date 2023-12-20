@@ -20,6 +20,15 @@ FILTER_CHOICES = (
     "noise",
 )
 
+NOISE_CHOICES = (
+    "white",
+    "blue",
+    "violet",
+    "brownian",
+    "pink",
+)
+
+
 default_values = {
     "debug": 0,
     "dry_run": False,
@@ -28,18 +37,37 @@ default_values = {
     "duration_sec": None,
     "duration_samples": None,
     "delta_distance_samples": 20,
+    "noise_type": "white",
     "max_level": np.iinfo(np.int16).max // 2,
     "outfile": None,
 }
 
 
-# (white) noise generator
-def gen_noise(duration_samples, max_level):
-    # create noise signal
+# generic noise generator
+# https://stackoverflow.com/a/67127726
+def gen_noise(duration_samples, noise_type, max_level):
+    # create white noise signal
     outaud = np.random.randint(
         -max_level, max_level, size=duration_samples, dtype=np.int16
     )
-    return outaud
+    if noise_type == "white":
+        return outaud
+    # get the conversion function
+    if noise_type == "blue":
+        fun = lambda f: np.sqrt(f)
+    elif noise_type == "violet":
+        fun = lambda f: f
+    elif noise_type == "brownian":
+        fun = lambda f: 1 / np.where(f == 0, float("inf"), f)
+    elif noise_type == "pink":
+        fun = lambda f: 1 / np.where(f == 0, float("inf"), np.sqrt(f))
+    # create and convert white noise
+    X_white = np.fft.rfft(np.random.randn(duration_samples))
+    S = fun(np.fft.rfftfreq(duration_samples))
+    # normalize S
+    S = S / np.sqrt(np.mean(S**2))
+    X_shaped = X_white * S
+    return np.fft.irfft(X_shaped)
 
 
 def gen_delta(duration_samples, delta_distance_samples):
@@ -72,7 +100,7 @@ def run_audio_generate(options):
     if options.filter == "delta":
         outaud = gen_delta(duration_samples, options.delta_distance_samples)
     elif options.filter == "noise":
-        outaud = gen_noise(duration_samples, options.max_level)
+        outaud = gen_noise(duration_samples, options.noise_type, options.max_level)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
@@ -164,6 +192,21 @@ def get_options(argv):
         dest="delta_distance_samples",
         default=default_values["delta_distance_samples"],
         help="Delta Distance (Samples)",
+    )
+    parser.add_argument(
+        "--noise-type",
+        action="store",
+        type=str,
+        dest="noise_type",
+        default=default_values["noise_type"],
+        choices=NOISE_CHOICES,
+        metavar="[%s]"
+        % (
+            " | ".join(
+                NOISE_CHOICES,
+            )
+        ),
+        help="noise type arg",
     )
     parser.add_argument(
         "--max-level",
