@@ -17,6 +17,7 @@ import scipy.signal
 
 FILTER_CHOICES = (
     "copy",
+    "cut",
     "stats",
     "noise",
     "phase-invert",
@@ -30,10 +31,28 @@ default_values = {
     "dry_run": False,
     "filter": "copy",
     "shift": 0,
+    "start_sample": 0,
+    "end_sample": -1,
+    "duration_samples": -1,
     "infile": None,
     "infile2": None,
     "outfile": None,
 }
+
+
+def cut_signal(inaud, start_sample, end_sample, duration_samples):
+    # use the input length as default end sample
+    end_sample = len(inaud) if end_sample == -1 else end_sample
+    # get duration in samples
+    if duration_samples == -1:
+        # get duration from start and end sample
+        duration_samples = end_sample - start_sample + 1
+    else:
+        end_sample = start_sample + duration_samples - 1
+    # cut the input
+    outaud = np.zeros((duration_samples,), dtype=np.int16)
+    outaud = inaud[start_sample : end_sample + 1]
+    return outaud
 
 
 def invert_phase(inaud, **kwargs):
@@ -156,6 +175,10 @@ def run_audio_filter(options):
     # process the input
     if options.filter == "copy":
         outaud = inaud
+    elif options.filter == "cut":
+        outaud = cut_signal(
+            inaud, options.start_sample, options.end_sample, options.duration_samples
+        )
     elif options.filter == "stats":
         print_stats(inaud, samplerate)
         return
@@ -239,6 +262,27 @@ def get_options(argv):
         dest="shift",
         default=default_values["shift"],
         help="Shift Amount",
+    )
+    parser.add_argument(
+        "--start-sample",
+        type=int,
+        dest="start_sample",
+        default=default_values["start_sample"],
+        help="Cut start (in samples)",
+    )
+    parser.add_argument(
+        "--end-sample",
+        type=int,
+        dest="end_sample",
+        default=default_values["end_sample"],
+        help="Cut end (in samples)",
+    )
+    parser.add_argument(
+        "--duration-samples",
+        type=int,
+        dest="duration_samples",
+        default=default_values["duration_samples"],
+        help="Cut duration (in samples)",
     )
     parser.add_argument(
         "-i",
