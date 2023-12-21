@@ -23,6 +23,7 @@ FILTER_CHOICES = (
     "phase-invert",
     "shift",
     "add",
+    "append",
     "diff",
 )
 
@@ -146,6 +147,18 @@ def add_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
+def append_inputs(in1aud, in2aud, **kwargs):
+    # start with int32 to allow additions
+    in1len = len(in1aud)
+    in2len = len(in2aud)
+    outlen = in1len + in2len
+    outaud = np.zeros((outlen,), dtype=np.int16)
+    # append the inputs
+    outaud[0:in1len] = in1aud
+    outaud[in1len :] = in2aud
+    return outaud
+
+
 # diffs inputs with saturation (not mixing)
 def diff_inputs(in1aud, in2aud, **kwargs):
     # start with int32 to allow additions
@@ -190,6 +203,8 @@ def run_audio_filter(options):
         outaud = shift_signal(inaud, options.shift)
     elif options.filter == "add":
         outaud = add_inputs(inaud, in2aud)
+    elif options.filter == "append":
+        outaud = append_inputs(inaud, in2aud)
     elif options.filter == "diff":
         outaud = diff_inputs(inaud, in2aud)
     # write the output
