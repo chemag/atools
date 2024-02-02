@@ -155,7 +155,7 @@ def append_inputs(in1aud, in2aud, **kwargs):
     outaud = np.zeros((outlen,), dtype=np.int16)
     # append the inputs
     outaud[0:in1len] = in1aud
-    outaud[in1len :] = in2aud
+    outaud[in1len:] = in2aud
     return outaud
 
 
@@ -176,16 +176,11 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
-def run_audio_filter(options):
-    # open the input
-    samplerate, inaud = scipy.io.wavfile.read(options.infile)
-    if options.infile2 is not None:
-        samplerate2, in2aud = scipy.io.wavfile.read(options.infile2)
-        # TODO(chema): fix this?
-        assert (
-            samplerate == samplerate2
-        ), f"error: both input files must have the same sample rate ({samplerate} != {samplerate2})"
-    # process the input
+def process_input(inaud, in2aud, samplerate, options):
+    return process_input_channel(inaud, in2aud, samplerate, options)
+
+
+def process_input_channel(inaud, in2aud, samplerate, options):
     if options.filter == "copy":
         outaud = inaud
     elif options.filter == "cut":
@@ -194,7 +189,7 @@ def run_audio_filter(options):
         )
     elif options.filter == "stats":
         print_stats(inaud, samplerate)
-        return
+        return None
     elif options.filter == "noise":
         outaud = add_noise(inaud)
     elif options.filter == "phase-invert":
@@ -207,8 +202,24 @@ def run_audio_filter(options):
         outaud = append_inputs(inaud, in2aud)
     elif options.filter == "diff":
         outaud = diff_inputs(inaud, in2aud)
+    return outaud
+
+
+def run_audio_filter(options):
+    # open the input
+    samplerate, inaud = scipy.io.wavfile.read(options.infile)
+    in2aud = None
+    if options.infile2 is not None:
+        samplerate2, in2aud = scipy.io.wavfile.read(options.infile2)
+        # TODO(chema): fix this?
+        assert (
+            samplerate == samplerate2
+        ), f"error: both input files must have the same sample rate ({samplerate} != {samplerate2})"
+    # process the input
+    outaud = process_input(inaud, in2aud, samplerate, options)
     # write the output
-    scipy.io.wavfile.write(options.outfile, samplerate, outaud)
+    if outaud is not None:
+        scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
 
 def get_options(argv):
