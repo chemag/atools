@@ -176,8 +176,33 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
-def process_input(inaud, in2aud, samplerate, options):
-    return process_input_channel(inaud, in2aud, samplerate, options)
+def get_channel(inaud, index):
+    if inaud is None:
+        return inaud
+    nchannels = inaud.shape[1] if len(inaud.shape) > 1 else 1
+    if index == 0 and nchannels == 1:
+        return inaud
+    return inaud[:, index]
+
+
+def process_input(in1aud, in2aud, samplerate, options):
+    out_channels = []
+    # calculate the number of output channels
+    num_in_channels1 = in1aud.shape[1] if len(in1aud.shape) > 1 else 1
+    num_in_channels2 = (
+        0 if in2aud is None else (in2aud.shape[1] if len(in2aud.shape) > 1 else 1)
+    )
+    num_out_channels = max(num_in_channels1, num_in_channels2)
+    for index in range(num_in_channels1):
+        in_channel1 = get_channel(in1aud, index)
+        in_channel2 = get_channel(in2aud, index)
+        out_channels.append(
+            process_input_channel(in_channel1, in_channel2, samplerate, options)
+        )
+    # put all the output channels together
+    if len(out_channels) == 1:
+        return out_channels[0]
+    return np.stack((out_channels), axis=1)
 
 
 def process_input_channel(inaud, in2aud, samplerate, options):
