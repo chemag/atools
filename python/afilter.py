@@ -63,7 +63,7 @@ def invert_phase(inaud, **kwargs):
 
 def shift_signal(inaud, shift):
     # start with the same length and type
-    outaud = inaud.copy()
+    outaud = np.zeros(inaud.shape, dtype=inaud.dtype)
     # process shifts by sign
     if shift > 0:
         outaud[shift:] = inaud[:-shift]
