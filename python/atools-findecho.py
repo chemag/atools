@@ -2,14 +2,16 @@
 # (c) Facebook, Inc. and its affiliates.
 
 import argparse
+import importlib
 import os
 import time
 
-import common as cm
 import numpy as np
 import pandas as pd
-import play_rec as pr
 import soundfile as sf
+
+atools_common = importlib.import_module("atools-common")
+atools_playrec = importlib.import_module("atools-playrec")
 
 gain = -1
 
@@ -70,7 +72,7 @@ def findDelayInData(noisy_data, ref_data, threshold, samplerate, verbose):
         gain = 0.7 / max_level  #  -3dB
 
     noisy_data = noisy_data * gain
-    data = cm.find_markers(ref_data, noisy_data, threshold, samplerate, verbose)
+    data = atools_common.find_markers(ref_data, noisy_data, threshold, samplerate, verbose)
     if len(data) > 1:
         diff = data.loc[1, "sample"] - data.loc[0, "sample"]
         return [
@@ -116,7 +118,7 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
     now = start
     tmpfile = outputcsv + "_.wav"
     while now - start < seconds:
-        pr.play_and_record(impulse, tmpfile, delay)
+        atools_playrec.play_and_record(impulse, tmpfile, delay)
         noisy = sf.SoundFile(tmpfile, "r")
         noisy_data = noisy.read()
         data = findDelayInData(noisy_data, ref_data, threshold, ref.samplerate, verbose)

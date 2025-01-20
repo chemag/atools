@@ -2,18 +2,19 @@
 # (c) Facebook, Inc. and its affiliates.
 
 import argparse
+import importlib
 import os
 import time
 
 import numpy as np
 import numpy.ma as ma
 import pandas as pd
-import play_rec as pr
 import soundfile as sf
 import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
 from scipy import signal
 
+atools_playrec = importlib.import_module("atools-playrec")
 
 def findPeaks(data, verbose=False):
     """Finds peaks in the data
@@ -356,7 +357,7 @@ def measureDelayUsingFeedback(
     now = start
     tmpfile = outputcsv + "_.wav"
     while now - start < seconds:
-        pr.play_and_record(impulse, tmpfile, delay)
+        atools_playrec.play_and_record(impulse, tmpfile, delay)
         noisy = sf.SoundFile(tmpfile, "r")
         noisy_data = noisy.read()
         data = findDelayUsingFeedbackFreqInData(

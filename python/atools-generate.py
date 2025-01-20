@@ -19,6 +19,7 @@ FILTER_CHOICES = (
     "delta",
     "noise",
 )
+#    "square",
 
 NOISE_CHOICES = (
     "white",
