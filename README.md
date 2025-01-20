@@ -1,14 +1,14 @@
 # atools: A set of audio tools
 
-## 1. findecho.py
+## 1. atools-findecho.py
 
 This tool will play a short sample and record simultanously looking for the first duplication of the played audio.
 Typical use case is to record roundtrip delay on a single device or end to end delay in a communication system between devices.
 The audio directory contains a 8kHz chirop which can be used as a signal.
 
 ```
-$ python/findecho.py --help
-usage: findecho.py [-h] -i IMPULSE -o OUTPUT_CSV [-t SECONDS] [-d DELAY]
+$ python/atools-findecho.py --help
+usage: atools-findecho.py [-h] -i IMPULSE -o OUTPUT_CSV [-t SECONDS] [-d DELAY]
                    [-s SAVE] [-v]
 
 optional arguments:
@@ -25,18 +25,18 @@ optional arguments:
 Example:
 
 ```
-$ python/findecho.py -i audio/chirp_300-3k.wav -o pixel3 -t 30
+$ python/atools-findecho.py -i audio/chirp_300-3k.wav -o pixel3 -t 30
 ```
 
 
-## 2. multitone.py
+## 2. atools-multitone.py
 
 This tool generates multitone wav files. A multitone is a series of (synchronized) sin signals at consecutive octaves, followed by silence. Tool allows selecting the first and last frequencies, the scale (to get louder/softer signals), the total duration, and the duration of the active part (the multitone concatenates periods of sin signal followed by silences).
 
 Example:
 
 ```
-$ ./python/multitone.py --duration-sec 10 --active-ratio 0.1 \
+$ python/atools-multitone.py --duration-sec 10 --active-ratio 0.1 \
     multitone.duration_sec_10.active_ratio_0_1.16000_hz.wav
 ```
 
@@ -47,8 +47,8 @@ Figure 1 shows a (audacity) spectogram of the output file of the last command (a
 
 Usage:
 ```
-$ ./multitone.py --help
-usage: multitone.py [-h] [-d] [--quiet] [--samplerate SAMPLERATE]
+$ ./atools-multitone.py --help
+usage: atools-multitone.py [-h] [-d] [--quiet] [--samplerate SAMPLERATE]
                     [--duration-sec DURATION_SEC]
                     [--active-ratio ACTIVE-RATIO] [--f0 F0] [--f1 F1]
                     [--scale SCALE] [--signal [multitone]]
@@ -75,6 +75,7 @@ options:
 
 
 ## 3. feedbackcount.py
+
 This tool uses the method of measuring distances between feedback signals.
 One of the issues with the findecho.py method is that sometimes feedback is
 hard to get a round. With a realtive short distance between the microphone
@@ -97,7 +98,7 @@ To measure it is probably best to have a system that does not feedback by itself
 needs a stimuli to start the loop. Also, limiting the number of stimuli signals makes
 is easier to not have them confusing the measurements.
 
-usage: feedbackcount.py [-h] [-i IMPULSE] [--source SOURCE]
+usage: atools-feedbackcount.py [-h] [-i IMPULSE] [--source SOURCE]
                         -o OUTPUT_CSV [-t SECONDS] [-d DELAY]
                         [-s SAVE] [-v] [-mi MINTIMEMS] [-mx MAXTIMEMS] [-nf]
 
@@ -118,7 +119,9 @@ optional arguments:
 
 
 Example:
->python3.8 python/feedbackcount.py -i audio/chirp_300-3k.wav -o pixel3 -t 30 -d 10
+```
+$ python/atools-feedbackcount.py -i audio/chirp_300-3k.wav -o pixel3 -t 30 -d 10
+```
 
 The command above will start a measurement using the '-i' as stimuli running for 30 s
 and the stimuli to be player every 10th seconds.
