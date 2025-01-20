@@ -72,7 +72,9 @@ def findDelayInData(noisy_data, ref_data, threshold, samplerate, verbose):
         gain = 0.7 / max_level  #  -3dB
 
     noisy_data = noisy_data * gain
-    data = atools_common.find_markers(ref_data, noisy_data, threshold, samplerate, verbose)
+    data = atools_common.find_markers(
+        ref_data, noisy_data, threshold, samplerate, verbose
+    )
     if len(data) > 1:
         diff = data.loc[1, "sample"] - data.loc[0, "sample"]
         return [

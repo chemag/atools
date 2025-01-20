@@ -16,6 +16,7 @@ from scipy import signal
 
 atools_playrec = importlib.import_module("atools-playrec")
 
+
 def findPeaks(data, verbose=False):
     """Finds peaks in the data
 
