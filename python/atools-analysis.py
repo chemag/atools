@@ -7,6 +7,7 @@ Runs a generic audio analyzer.
 
 
 import argparse
+import importlib
 import math
 import numpy as np
 import os
@@ -14,6 +15,8 @@ import pandas as pd
 import sys
 import scipy.io.wavfile
 import scipy.signal
+
+atools_version = importlib.import_module("atools-version")
 
 
 ANALYSIS_CHOICES = ("frequency",)
@@ -66,10 +69,8 @@ def get_options(argv):
     parser.add_argument(
         "-v",
         "--version",
-        action="store_true",
-        dest="version",
-        default=False,
-        help="Print version",
+        action="version",
+        version=atools_version.__version__,
     )
     parser.add_argument(
         "-d",
@@ -128,8 +129,6 @@ def get_options(argv):
     )
     # do the parsing
     options = parser.parse_args(argv[1:])
-    if options.version:
-        return options
     return options
 
 
