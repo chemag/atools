@@ -25,6 +25,7 @@ FILTER_CHOICES = (
     "add",
     "append",
     "diff",
+    "reflect",
 )
 
 default_values = {
@@ -35,12 +36,15 @@ default_values = {
     "start_sample": 0,
     "end_sample": -1,
     "duration_samples": -1,
+    "reflect_delta_samples": 0,
+    "reflect_alpha": 1.0,
     "infile": None,
     "infile2": None,
     "outfile": None,
 }
 
 
+# filters
 def cut_signal(inaud, start_sample, end_sample, duration_samples):
     # use the input length as default end sample
     end_sample = len(inaud) if end_sample == -1 else end_sample
@@ -176,6 +180,32 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
+# outaud[i] = inau[i] + alpha * (inaud[i + delta_samples])
+def reflect(inaud, delta_samples, alpha):
+    # operate in float32
+    op_dtype = np.float32
+    inaud_operate = inaud.astype(op_dtype)
+    # start with a zero signal with the same shape
+    outlen = len(inaud_operate)
+    outaud = np.zeros(inaud_operate.shape, dtype=op_dtype)
+    # process shifts by sign
+    for i in range(outlen):
+        if (i + delta_samples) < outlen:
+            outaud[i] = inaud_operate[i] + alpha * (inaud_operate[i + delta_samples])
+        else:
+            outaud[i] = inaud_operate[i]
+    # normalize the float32 signal
+    max_inaud = np.max(np.abs(inaud))
+    max_outaud = np.max(np.abs(outaud))
+    # avoid division by zero if the signal is all zeros
+    if max_outaud == 0:
+        return outaud.astype(inaud.dtype)
+    # normalize the signal by dividing by the ratio of maximum values
+    normalized_outaud = outaud * (max_inaud / max_outaud)
+    return normalized_outaud.astype(inaud.dtype)
+
+
+# common code
 def get_channel(inaud, index):
     if inaud is None:
         return inaud
@@ -227,6 +257,8 @@ def process_input_channel(inaud, in2aud, samplerate, options):
         outaud = append_inputs(inaud, in2aud)
     elif options.filter == "diff":
         outaud = diff_inputs(inaud, in2aud)
+    elif options.filter == "reflect":
+        outaud = reflect(inaud, options.reflect_delta_samples, options.reflect_alpha)
     return outaud
 
 
@@ -334,6 +366,20 @@ def get_options(argv):
         dest="duration_samples",
         default=default_values["duration_samples"],
         help="Cut duration (in samples)",
+    )
+    parser.add_argument(
+        "--reflect-delta-samples",
+        type=int,
+        dest="reflect_delta_samples",
+        default=default_values["reflect_delta_samples"],
+        help="Reflection delta (in samples)",
+    )
+    parser.add_argument(
+        "--reflect-alpha",
+        type=float,
+        dest="reflect_alpha",
+        default=default_values["reflect_alpha"],
+        help="Reflection Alpha",
     )
     parser.add_argument(
         "-i",
