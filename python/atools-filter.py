@@ -180,7 +180,7 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
-# outaud[i] = inau[i] + alpha * (inaud[i + delta_samples])
+# outaud[i] = inau[i] + alpha * (inaud[i - delta_samples])
 def reflect(inaud, delta_samples, alpha):
     # operate in float32
     op_dtype = np.float32
@@ -190,8 +190,8 @@ def reflect(inaud, delta_samples, alpha):
     outaud = np.zeros(inaud_operate.shape, dtype=op_dtype)
     # process shifts by sign
     for i in range(outlen):
-        if (i + delta_samples) < outlen:
-            outaud[i] = inaud_operate[i] + alpha * (inaud_operate[i + delta_samples])
+        if 0 <= (i - delta_samples) < outlen:
+            outaud[i] = inaud_operate[i] + alpha * (inaud_operate[i - delta_samples])
         else:
             outaud[i] = inaud_operate[i]
     # normalize the float32 signal
