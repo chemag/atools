@@ -38,6 +38,7 @@ default_values = {
     "duration_samples": -1,
     "reflect_delta_samples": 0,
     "reflect_alpha": 1.0,
+    "reflect_beta": 1.0,
     "infile": None,
     "infile2": None,
     "outfile": None,
@@ -180,8 +181,8 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
-# outaud[i] = inau[i] + alpha * (inaud[i - delta_samples])
-def reflect(inaud, delta_samples, alpha):
+# outaud[i] = beta * inau[i] + alpha * (inaud[i - delta_samples])
+def reflect(inaud, delta_samples, alpha, beta):
     # operate in float32
     op_dtype = np.float32
     inaud_operate = inaud.astype(op_dtype)
@@ -190,10 +191,9 @@ def reflect(inaud, delta_samples, alpha):
     outaud = np.zeros(inaud_operate.shape, dtype=op_dtype)
     # process shifts by sign
     for i in range(outlen):
+        outaud[i] = beta * inaud_operate[i]
         if 0 <= (i - delta_samples) < outlen:
-            outaud[i] = inaud_operate[i] + alpha * (inaud_operate[i - delta_samples])
-        else:
-            outaud[i] = inaud_operate[i]
+            outaud[i] += alpha * (inaud_operate[i - delta_samples])
     # normalize the float32 signal
     max_inaud = np.max(np.abs(inaud))
     max_outaud = np.max(np.abs(outaud))
@@ -258,7 +258,12 @@ def process_input_channel(inaud, in2aud, samplerate, options):
     elif options.filter == "diff":
         outaud = diff_inputs(inaud, in2aud)
     elif options.filter == "reflect":
-        outaud = reflect(inaud, options.reflect_delta_samples, options.reflect_alpha)
+        outaud = reflect(
+            inaud,
+            options.reflect_delta_samples,
+            options.reflect_alpha,
+            options.reflect_beta,
+        )
     return outaud
 
 
@@ -380,6 +385,13 @@ def get_options(argv):
         dest="reflect_alpha",
         default=default_values["reflect_alpha"],
         help="Reflection Alpha",
+    )
+    parser.add_argument(
+        "--reflect-beta",
+        type=float,
+        dest="reflect_beta",
+        default=default_values["reflect_beta"],
+        help="Reflection Beta",
     )
     parser.add_argument(
         "-i",
