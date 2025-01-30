@@ -16,6 +16,7 @@ import scipy.signal
 
 
 FILTER_CHOICES = (
+    "help",
     "copy",
     "cut",
     "stats",
@@ -31,7 +32,7 @@ FILTER_CHOICES = (
 default_values = {
     "debug": 0,
     "dry_run": False,
-    "filter": "copy",
+    "filter": "help",
     "shift": 0,
     "start_sample": 0,
     "end_sample": -1,
@@ -424,6 +425,9 @@ def get_options(argv):
     options = parser.parse_args(argv[1:])
     if options.version:
         return options
+    if options.filter == "help":
+        parser.print_help()
+        sys.exit(0)
     return options
 
 
