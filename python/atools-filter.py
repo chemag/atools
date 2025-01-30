@@ -27,6 +27,7 @@ FILTER_CHOICES = (
     "append",
     "diff",
     "reflect",
+    "compose",
 )
 
 default_values = {
@@ -40,6 +41,10 @@ default_values = {
     "reflect_delta_samples": 0,
     "reflect_alpha": 1.0,
     "reflect_beta": 1.0,
+    "compose_delta_samples": 0,
+    "compose_alpha": 1.0,
+    "compose_beta": 1.0,
+    "compose_normalize": True,
     "infile": None,
     "infile2": None,
     "outfile": None,
@@ -182,28 +187,37 @@ def diff_inputs(in1aud, in2aud, **kwargs):
     return outaud.astype(np.int16)
 
 
-# outaud[i] = beta * inau[i] + alpha * (inaud[i - delta_samples])
-def reflect(inaud, delta_samples, alpha, beta):
+# outaud[i] = alpha * inaud1[i] + beta * (inaud2[i - delta_samples])
+def compose(inaud1, inaud2, delta_samples, alpha, beta, normalize):
     # operate in float32
     op_dtype = np.float32
-    inaud_operate = inaud.astype(op_dtype)
+    inaud1_operate = inaud1.astype(op_dtype)
+    inaud2_operate = inaud2.astype(op_dtype)
     # start with a zero signal with the same shape
-    outlen = len(inaud_operate)
-    outaud = np.zeros(inaud_operate.shape, dtype=op_dtype)
+    outlen1 = len(inaud1_operate)
+    outlen2 = len(inaud2_operate)
+    outaud = np.zeros(inaud1_operate.shape, dtype=op_dtype)
     # process shifts by sign
-    for i in range(outlen):
-        outaud[i] = beta * inaud_operate[i]
-        if 0 <= (i - delta_samples) < outlen:
-            outaud[i] += alpha * (inaud_operate[i - delta_samples])
-    # normalize the float32 signal
-    max_inaud = np.max(np.abs(inaud))
-    max_outaud = np.max(np.abs(outaud))
-    # avoid division by zero if the signal is all zeros
-    if max_outaud == 0:
-        return outaud.astype(inaud.dtype)
-    # normalize the signal by dividing by the ratio of maximum values
-    normalized_outaud = outaud * (max_inaud / max_outaud)
-    return normalized_outaud.astype(inaud.dtype)
+    for i in range(outlen1):
+        outaud[i] = alpha * inaud1_operate[i]
+        if 0 <= (i - delta_samples) < outlen2:
+            outaud[i] += beta * (inaud2_operate[i - delta_samples])
+    if normalize:
+        # normalize the float32 signal to inaud1
+        max_inaud1 = np.max(np.abs(inaud1))
+        max_outaud = np.max(np.abs(outaud))
+        # avoid division by zero if the signal is all zeros
+        if max_outaud == 0:
+            return outaud.astype(inaud.dtype)
+        # normalize the signal by dividing by the ratio of maximum values
+        normalized_outaud = outaud * (max_inaud1 / max_outaud)
+        outaud = normalized_outaud
+    return outaud.astype(inaud1.dtype)
+
+
+# outaud[i] = alpha * inaud[i] + beta * (inaud[i - delta_samples])
+def reflect(inaud, delta_samples, alpha, beta):
+    return compose(inaud, inaud, delta_samples, alpha, beta, normalize=True)
 
 
 # common code
@@ -264,6 +278,15 @@ def process_input_channel(inaud, in2aud, samplerate, options):
             options.reflect_delta_samples,
             options.reflect_alpha,
             options.reflect_beta,
+        )
+    elif options.filter == "compose":
+        outaud = compose(
+            inaud,
+            in2aud,
+            options.compose_delta_samples,
+            options.compose_alpha,
+            options.compose_beta,
+            options.compose_normalize,
         )
     return outaud
 
@@ -393,6 +416,40 @@ def get_options(argv):
         dest="reflect_beta",
         default=default_values["reflect_beta"],
         help="Reflection Beta",
+    )
+    parser.add_argument(
+        "--compose-delta-samples",
+        type=int,
+        dest="compose_delta_samples",
+        default=default_values["compose_delta_samples"],
+        help="Composition delta (in samples)",
+    )
+    parser.add_argument(
+        "--compose-alpha",
+        type=float,
+        dest="compose_alpha",
+        default=default_values["compose_alpha"],
+        help="Composition Alpha",
+    )
+    parser.add_argument(
+        "--compose-beta",
+        type=float,
+        dest="compose_beta",
+        default=default_values["compose_beta"],
+        help="Composition Beta",
+    )
+    parser.add_argument(
+        "--compose-normalize",
+        action="store_true",
+        dest="compose_normalize",
+        default=default_values["compose_normalize"],
+        help="Normalize composition operation",
+    )
+    parser.add_argument(
+        "--no-compose-normalize",
+        action="store_false",
+        dest="compose_normalize",
+        help="Do not normalize composition operation",
     )
     parser.add_argument(
         "-i",
