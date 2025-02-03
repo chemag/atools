@@ -189,6 +189,10 @@ def diff_inputs(in1aud, in2aud, **kwargs):
 
 # outaud[i] = alpha * inaud1[i] + beta * (inaud2[i - delta_samples])
 def compose(inaud1, inaud2, delta_samples, alpha, beta, normalize, debug):
+    # ensure both signals use the same type
+    assert (
+        inaud1.dtype == inaud2.dtype
+    ), f"error: cannot compose inaud1 ({inaud1.dtype}) and inaud2 ({inaud2.dtype})"
     # operate in float32
     op_dtype = np.float32
     inaud1_operate = inaud1.astype(op_dtype)
