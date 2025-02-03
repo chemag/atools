@@ -188,7 +188,7 @@ def diff_inputs(in1aud, in2aud, **kwargs):
 
 
 # outaud[i] = alpha * inaud1[i] + beta * (inaud2[i - delta_samples])
-def compose(inaud1, inaud2, delta_samples, alpha, beta, normalize):
+def compose(inaud1, inaud2, delta_samples, alpha, beta, normalize, debug):
     # operate in float32
     op_dtype = np.float32
     inaud1_operate = inaud1.astype(op_dtype)
@@ -210,14 +210,18 @@ def compose(inaud1, inaud2, delta_samples, alpha, beta, normalize):
         if max_outaud == 0:
             return outaud.astype(inaud.dtype)
         # normalize the signal by dividing by the ratio of maximum values
+        if debug > 0:
+            print(f"normalization factor: {max_inaud1 / max_outaud}")
         normalized_outaud = outaud * (max_inaud1 / max_outaud)
         outaud = normalized_outaud
     return outaud.astype(inaud1.dtype)
 
 
 # outaud[i] = alpha * inaud[i] + beta * (inaud[i - delta_samples])
-def reflect(inaud, delta_samples, alpha, beta):
-    return compose(inaud, inaud, delta_samples, alpha, beta, normalize=True)
+def reflect(inaud, delta_samples, alpha, beta, debug):
+    return compose(
+        inaud, inaud, delta_samples, alpha, beta, normalize=True, debug=debug
+    )
 
 
 # common code
@@ -287,6 +291,7 @@ def process_input_channel(inaud, in2aud, samplerate, options):
             options.compose_alpha,
             options.compose_beta,
             options.compose_normalize,
+            options.debug,
         )
     return outaud
 
