@@ -502,7 +502,7 @@ def main(argv):
     if options.outfile is None or options.outfile == "-":
         options.outfile = "/dev/fd/1"
     # print results
-    if options.debug > 0:
+    if options.debug > 1:
         print(options)
 
     run_audio_filter(options)
