@@ -18,6 +18,7 @@ import scipy.signal
 FILTER_CHOICES = (
     "delta",
     "noise",
+    "samples",
 )
 #    "square",
 
@@ -40,6 +41,7 @@ default_values = {
     "delta_distance_samples": 20,
     "noise_type": "white",
     "max_level": np.iinfo(np.int16).max // 2,
+    "samples": [],
     "outfile": None,
 }
 
@@ -82,15 +84,24 @@ def gen_delta(duration_samples, delta_distance_samples):
     return outaud
 
 
+def gen_samples(samples):
+    outaud = np.array(samples, dtype=np.int16)
+    return outaud
+
+
 def run_audio_generate(options):
     samplerate = options.samplerate
     duration_samples = (
-        options.duration_samples
-        if options.duration_samples is not None
+        len(options.samples)
+        if options.filter == "samples"
         else (
-            samplerate * options.duration_sec
-            if options.duration_sec is not None
-            else None
+            options.duration_samples
+            if options.duration_samples is not None
+            else (
+                samplerate * options.duration_sec
+                if options.duration_sec is not None
+                else None
+            )
         )
     )
     assert (
@@ -102,6 +113,8 @@ def run_audio_generate(options):
         outaud = gen_delta(duration_samples, options.delta_distance_samples)
     elif options.filter == "noise":
         outaud = gen_noise(duration_samples, options.noise_type, options.max_level)
+    elif options.filter == "samples":
+        outaud = gen_samples(options.samples)
     # write the output
     scipy.io.wavfile.write(options.outfile, samplerate, outaud)
 
@@ -216,6 +229,7 @@ def get_options(argv):
         default=default_values["max_level"],
         help="Maximum Level of Generated Signal",
     )
+    parser.add_argument("--samples", nargs="+", type=int, help="Sample values")
     parser.add_argument(
         "-o",
         "--outfile",
