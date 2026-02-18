@@ -125,7 +125,7 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
             rounded = round(1000 * average / samplerate)
             return average, rounded, 1
         else:
-            return None
+            return None, None, None
     else:
         minsamples = int(samplerate * (minimum_ms / 1000))
         maxsamples = int(samplerate * (maximum_ms / 1000))
@@ -161,10 +161,10 @@ def findMostCommonDiff(data, samplerate, minimum_ms, maximum_ms, verbose):
             try:
                 rounded = round(1000 * average / samplerate)
             except Exception:
-                return None
+                return None, None, None
             return average, rounded, hist[maxindex]
         else:
-            return None
+            return None, None, None
 
 
 def bpFilterSignal(data, hp, lp, order, samplerate, verbose):
