@@ -166,7 +166,7 @@ def run(command, **kwargs):
     stdin = subprocess.PIPE if kwargs.get("stdin", False) else None
     bufsize = kwargs.get("bufsize", 0)
     universal_newlines = kwargs.get("universal_newlines", False)
-    default_close_fds = True if sys.platform == "linux2" else False
+    default_close_fds = True if sys.platform == "linux" else False
     close_fds = kwargs.get("close_fds", default_close_fds)
     shell = kwargs.get("shell", type(command) in (type(""), type("")))
     logfd = kwargs.get("logfd", sys.stdout)
