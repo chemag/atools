@@ -4,6 +4,7 @@
 import argparse
 import importlib
 import os
+import sys
 import time
 
 import numpy as np
@@ -109,7 +110,7 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
         ref_data = ref.read()
     else:
         print("Only wav file supported")
-        exit(0)
+        sys.exit(1)
 
     outputfile = None
     failed_counter = 0
