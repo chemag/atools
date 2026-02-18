@@ -36,12 +36,10 @@ def findDelayInFile(noisy_path, ref_path, threshold, verbose):
         correlation: for last signal
     """
 
-    noisy = sf.SoundFile(noisy_path, "r")
-    ref = sf.SoundFile(ref_path, "r")
-
-    noisy_data = noisy.read()
-    ref_data = ref.read()
-    return findDelayInData(noisy_data, ref_data, threshold, noisy.samplerate, verbose)
+    with sf.SoundFile(noisy_path, "r") as noisy, sf.SoundFile(ref_path, "r") as ref:
+        noisy_data = noisy.read()
+        ref_data = ref.read()
+        return findDelayInData(noisy_data, ref_data, threshold, noisy.samplerate, verbose)
 
 
 def findDelayInData(noisy_data, ref_data, threshold, samplerate, verbose):
@@ -121,20 +119,20 @@ def measureDelay(impulse, threshold, delay, seconds, outputcsv, save, verbose=Fa
     tmpfile = outputcsv + "_.wav"
     while now - start < seconds:
         atools_playrec.play_and_record(impulse, tmpfile, delay)
-        noisy = sf.SoundFile(tmpfile, "r")
-        noisy_data = noisy.read()
-        data = findDelayInData(noisy_data, ref_data, threshold, ref.samplerate, verbose)
-        if data is not None:
-            delays.append(data)
-        else:
-            failed_counter += 1
+        with sf.SoundFile(tmpfile, "r") as noisy:
+            noisy_data = noisy.read()
+            data = findDelayInData(noisy_data, ref_data, threshold, ref.samplerate, verbose)
+            if data is not None:
+                delays.append(data)
+            else:
+                failed_counter += 1
 
-        if (len(save) > 0) and (outputfile is None):
-            outputfile = sf.SoundFile(
-                save, "w", samplerate=noisy.samplerate, channels=noisy.channels
-            )
-        if outputfile:
-            outputfile.write(noisy_data)
+            if (len(save) > 0) and (outputfile is None):
+                outputfile = sf.SoundFile(
+                    save, "w", samplerate=noisy.samplerate, channels=noisy.channels
+                )
+            if outputfile:
+                outputfile.write(noisy_data)
         now = time.time()
         perc = int(100 * (now - start) / seconds)
         if perc <= 100:

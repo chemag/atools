@@ -265,11 +265,11 @@ def findDelayUsingFeedbackFreqInFile(
         delay: in ms,
     """
 
-    noisy = sf.SoundFile(noisy_path, "r")
-    data = noisy.read()
-    return findDelayUsingFeedbackFreqInData(
-        data, noisy.samplerate, min_length_ms, max_length_ms, nofilter, hp, lp, verbose
-    )
+    with sf.SoundFile(noisy_path, "r") as noisy:
+        data = noisy.read()
+        return findDelayUsingFeedbackFreqInData(
+            data, noisy.samplerate, min_length_ms, max_length_ms, nofilter, hp, lp, verbose
+        )
 
 
 def findDelayUsingFeedbackFreqInData(
@@ -359,29 +359,29 @@ def measureDelayUsingFeedback(
     tmpfile = outputcsv + "_.wav"
     while now - start < seconds:
         atools_playrec.play_and_record(impulse, tmpfile, delay)
-        noisy = sf.SoundFile(tmpfile, "r")
-        noisy_data = noisy.read()
-        data = findDelayUsingFeedbackFreqInData(
-            noisy_data,
-            noisy.samplerate,
-            min_length_ms,
-            max_length_ms,
-            nofilter,
-            hp,
-            lp,
-            verbose,
-        )
-        if data is not None:
-            delays.append(data)
-        else:
-            failed_counter += 1
-
-        if (len(save) > 0) and (outputfile is None):
-            outputfile = sf.SoundFile(
-                save, "w", samplerate=noisy.samplerate, channels=noisy.channels
+        with sf.SoundFile(tmpfile, "r") as noisy:
+            noisy_data = noisy.read()
+            data = findDelayUsingFeedbackFreqInData(
+                noisy_data,
+                noisy.samplerate,
+                min_length_ms,
+                max_length_ms,
+                nofilter,
+                hp,
+                lp,
+                verbose,
             )
-        if outputfile:
-            outputfile.write(noisy_data)
+            if data is not None:
+                delays.append(data)
+            else:
+                failed_counter += 1
+
+            if (len(save) > 0) and (outputfile is None):
+                outputfile = sf.SoundFile(
+                    save, "w", samplerate=noisy.samplerate, channels=noisy.channels
+                )
+            if outputfile:
+                outputfile.write(noisy_data)
         now = time.time()
         perc = int(100 * (now - start) / seconds)
         if perc <= 100:
