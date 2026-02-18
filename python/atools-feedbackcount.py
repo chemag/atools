@@ -413,7 +413,7 @@ def measureDelayUsingFeedback(
             "on problems with the transmission.\n"
         )
 
-    if len(result > 0):
+    if len(result) > 0:
         print(f"Shortest latency: {int(np.min(result['time']))} ms")
         print(f"Longest latency: {int(np.max(result['time']))} ms")
         print(f"Average latency: {int(np.mean(result['time']))} ms")
