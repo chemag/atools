@@ -1,4 +1,4 @@
-#!/usr/bin/env pythonx
+#!/usr/bin/env python3
 # (c) Facebook, Inc. and its affiliates.
 
 import argparse
