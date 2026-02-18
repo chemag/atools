@@ -376,7 +376,7 @@ def measureDelayUsingFeedback(
         else:
             failed_counter += 1
 
-        if (len(save) > 0) & (outputfile is None):
+        if (len(save) > 0) and (outputfile is None):
             outputfile = sf.SoundFile(
                 save, "w", samplerate=noisy.samplerate, channels=noisy.channels
             )
@@ -398,7 +398,7 @@ def measureDelayUsingFeedback(
     result = pd.DataFrame.from_records(delays, columns=labels, coerce_float=True)
 
     output_filename = outputcsv
-    if (output_filename is not None) & (output_filename[-4:] != ".csv"):
+    if (output_filename is not None) and (output_filename[-4:] != ".csv"):
         output_filename = output_filename + ".csv"
     if output_filename:
         result.to_csv(output_filename, index=False)

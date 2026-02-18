@@ -60,7 +60,7 @@ def play_and_record(signal, output, duration_sec):
         ct = int(time.currentTime)
         rec_data = np.append(rec_data, indata[::])
 
-        if (ct - last_start > 10) & (index < 0):
+        if (ct - last_start > 10) and (index < 0):
             index = 0
             last_start = ct
         if index >= 0:
